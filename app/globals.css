@@ -1,26 +1,242 @@
+/* ============================================================
+   Benny's Leaves — globals.css
+   Tailwind CSS v4.3 (CSS-first config, no tailwind.config.js)
+   ============================================================ */
+
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ------------------------------------------------------------
+   FONTS
+   Prefer next/font over this CDN import in production (see
+   Performance Rules) — kept here so this file also works
+   standalone in a plain Vite/HTML setup.
+   ------------------------------------------------------------ */
+@import url('https://fonts.googleapis.com/css2?family=Young+Serif&display=swap');
+
+/* ------------------------------------------------------------
+   THEME — every token here becomes a Tailwind utility.
+   e.g. --color-terracotta below generates bg-terracotta,
+   text-terracotta, border-terracotta, ring-terracotta, etc.
+   ------------------------------------------------------------ */
+@theme {
+  /* ---- Brand colors (fixed — from the brand strategy doc) ---- */
+  --color-terracotta:        #C86D51;
+  --color-olive:              #4A6B53;
+  --color-parchment:          #FDF8F2;
+  --color-espresso:           #2C221E;
+  --color-ochre:               #D4A359;
+
+  /* ---- Derived tints, shades & status colors ---- */
+  --color-terracotta-hover:  #B35D42;
+  --color-terracotta-tint:   #F3E2DB;
+  --color-terracotta-deep:   #A8432E; /* danger */
+  --color-olive-hover:        #3A5542;
+  --color-olive-tint:         #E4EBE5;
+  --color-ochre-hover:        #B98A44;
+  --color-ochre-tint:          #F6E9D4;
+  --color-parchment-bright:  #FFFDF9; /* card surfaces */
+  --color-parchment-deep:    #F3EBDD; /* inset panels / alternating bands */
+  --color-slate:               #5C7A8A; /* info state only — the one non-brand hue */
+  --color-slate-tint:          #E3EAEC;
+
+  /* ---- Semantic text/border aliases (kept out of the color
+     namespace above on purpose, so `text-primary` etc. read as
+     roles, not swatches, in component code) ---- */
+  --color-text-primary:  #2C221E;
+  --color-text-body:      #4A403A;
+  --color-text-muted:     #8A8078;
+
+  /* ---- Fonts ---- */
+  --font-serif: "Young Serif", Georgia, "Times New Roman", serif;
+  --font-sans:  "Outfit", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* ---- Fluid type scale — clamp() computed 375px \u2192 1200px viewport.
+     Generates text-display, text-h1 ... text-caption utilities. ---- */
+  --text-display:      clamp(2.5rem,    1.82rem + 2.9vw,  4rem);
+  --text-h1:           clamp(2rem,      1.66rem + 1.45vw, 2.75rem);
+  --text-h2:           clamp(1.5rem,    1.33rem + 0.73vw, 1.875rem);
+  --text-h3:           clamp(1.125rem,  1.07rem + 0.24vw, 1.25rem);
+  --text-h4:           clamp(1rem,      0.94rem + 0.24vw, 1.125rem);
+  --text-body-lg:      clamp(1.0625rem, 1.03rem + 0.12vw, 1.125rem);
+  --text-body-base:    clamp(0.9375rem, 0.91rem + 0.12vw, 1rem);
+  --text-ui:           clamp(0.875rem,  0.85rem + 0.12vw, 0.9375rem);
+  --text-caption:       clamp(0.75rem,   0.72rem + 0.12vw, 0.8125rem);
+
+  /* line-heights paired with the sizes above (Tailwind v4 lets you
+     ship a default line-height alongside a font-size token) */
+  --text-display--line-height:   1.15;
+  --text-h1--line-height:        1.2;
+  --text-h2--line-height:        1.25;
+  --text-h3--line-height:        1.35;
+  --text-h4--line-height:        1.4;
+  --text-body-lg--line-height:   1.6;
+  --text-body-base--line-height: 1.55;
+  --text-ui--line-height:        1;
+  --text-caption--line-height:   1.4;
+
+  /* ---- Spacing (4px base unit) — extends the default scale ---- */
+  --spacing-4-5: 18px; /* the one custom half-step the default 4px scale doesn't cover */
+
+  /* ---- Radius vocabulary ---- */
+  --radius-sm:   6px;    /* inputs, tags */
+  --radius-md:   10px;   /* buttons */
+  --radius-lg:   16px;   /* cards */
+  --radius-xl:   22px;   /* hero panels, modals */
+  --radius-pill: 9999px; /* filter pills, condition stamp */
+
+  /* ---- Shadows ---- */
+  --shadow-card:    0 1px 2px rgba(44, 34, 30, 0.05);
+  --shadow-raised:  0 8px 24px rgba(44, 34, 30, 0.10);
+  --shadow-stamp:   0 2px 5px rgba(44, 34, 30, 0.18);
+
+  /* ---- Motion ---- */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ---- Animations — generates animate-fade-up, animate-slide-in, etc. ---- */
+  --animate-fade-up:  fadeUp 0.45s var(--ease-out-soft) both;
+  --animate-slide-in: slideIn 0.45s var(--ease-out-soft) both;
+  --animate-pulse-dot: pulseDot 2s ease-in-out infinite;
+  --animate-leaf-sway: leafSway 3.5s ease-in-out infinite;
+  --animate-shimmer:  shimmer 1.6s ease-in-out infinite;
+
+  --container-page: 1180px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ------------------------------------------------------------
+   KEYFRAMES — must be defined outside @theme in plain CSS;
+   the --animate-* tokens above reference these by name.
+   ------------------------------------------------------------ */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.3; }
+}
+@keyframes leafSway {
+  0%, 100% { transform: rotate(-6deg); }
+  50%      { transform: rotate(6deg); }
+}
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* ------------------------------------------------------------
+   BASE LAYER
+   ------------------------------------------------------------ */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background: var(--color-parchment);
+    color: var(--color-text-body);
+    font-family: var(--font-sans);
+    font-size: var(--text-body-base);
+    line-height: var(--text-body-base--line-height);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-serif);
+    color: var(--color-text-primary);
+    font-weight: 400;
+  }
+
+  /* Reserve the serif for the roles it's meant for — H3/H4 in the
+     product are set in Outfit via utility classes, not by default,
+     which is why this file only sets family here and weight/size
+     come from the .h3 / .h4 utilities below. */
+
+  :focus-visible {
+    outline: 2px solid var(--color-terracotta);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ------------------------------------------------------------
+   COMPONENT LAYER
+   Hand-authored classes for patterns used everywhere (buttons,
+   type roles, cards) so components.tsx files stay readable
+   instead of carrying 15 utility classes per element.
+   ------------------------------------------------------------ */
+@layer components {
+  /* ---- Type roles (pairs a size token with the correct family/weight) ---- */
+  .display {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: var(--text-display);
+    line-height: var(--text-display--line-height);
+    letter-spacing: -0.01em;
+    color: var(--color-text-primary);
+  }
+  .h1 { font-family: var(--font-serif); font-weight: 400; font-size: var(--text-h1); line-height: var(--text-h1--line-height); color: var(--color-text-primary); }
+  .h2 { font-family: var(--font-serif); font-weight: 400; font-size: var(--text-h2); line-height: var(--text-h2--line-height); color: var(--color-text-primary); }
+  .h3 { font-family: var(--font-sans);  font-weight: 600; font-size: var(--text-h3); line-height: var(--text-h3--line-height); color: var(--color-text-primary); }
+  .h4 { font-family: var(--font-sans);  font-weight: 600; font-size: var(--text-h4); line-height: var(--text-h4--line-height); color: var(--color-text-primary); }
+  .ui-text { font-family: var(--font-sans); font-weight: 600; font-size: var(--text-ui); letter-spacing: 0.01em; }
+  .caption { font-family: var(--font-sans); font-weight: 500; font-size: var(--text-caption); color: var(--color-text-muted); }
+
+  /* ---- Buttons ---- */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-[22px] py-3 font-sans font-semibold text-ui cursor-pointer border-[1.5px] border-transparent transition-all duration-150;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary   { @apply bg-terracotta text-parchment; }
+  .btn-primary:hover { background: var(--color-terracotta-hover); }
+  .btn-secondary { @apply bg-transparent text-olive border-olive; }
+  .btn-secondary:hover { background: var(--color-olive-tint); }
+  .btn-ghost { @apply bg-transparent text-text-primary underline-offset-4 decoration-transparent; }
+  .btn-ghost:hover { text-decoration-color: currentColor; }
+  .btn:disabled { @apply opacity-45 cursor-not-allowed; }
+
+  /* ---- Book card (see design system doc, component 3) ---- */
+  .book-card {
+    @apply bg-parchment-bright rounded-lg overflow-hidden flex flex-col cursor-pointer;
+    border: 1px solid rgba(44, 34, 30, 0.14);
+    transition: transform 250ms var(--ease-out-soft), border-color 250ms;
+  }
+  .book-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--color-terracotta);
+  }
+
+  /* ---- Condition tag (wax-seal pill) ---- */
+  .condition-tag {
+    @apply inline-flex items-center gap-1.5 rounded-pill px-3 py-1 font-sans font-semibold text-caption;
+    background: var(--color-ochre-tint);
+    color: var(--color-ochre-hover);
+    border: 1px solid var(--color-ochre);
+  }
+  .condition-tag.like-new       { background: var(--color-olive-tint); color: var(--color-olive); border-color: var(--color-olive); }
+  .condition-tag.well-treasured { background: var(--color-terracotta-tint); color: var(--color-terracotta-hover); border-color: var(--color-terracotta); }
 }
+
+/* ------------------------------------------------------------
+   USAGE NOTES
+   - Prefer the .btn / .book-card / .condition-tag component
+     classes for anything reused across 3+ places; reach for raw
+     Tailwind utilities (bg-terracotta, text-h2, rounded-lg) for
+     one-off layout work.
+   - Status colors intentionally live as plain --color-* tokens,
+     not @apply'd classes, since order-status badges combine them
+     in more permutations than components should hard-code.
+   ------------------------------------------------------------ */
