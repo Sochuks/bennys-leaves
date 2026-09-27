@@ -2,6 +2,7 @@
    Benny's Leaves — globals.css
    Tailwind CSS v4.3 (CSS-first config, no tailwind.config.js)
    ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Young+Serif&display=swap');
 
 @import "tailwindcss";
 
@@ -11,7 +12,6 @@
    Performance Rules) — kept here so this file also works
    standalone in a plain Vite/HTML setup.
    ------------------------------------------------------------ */
-@import url('https://fonts.googleapis.com/css2?family=Young+Serif&display=swap');
 
 /* ------------------------------------------------------------
    THEME — every token here becomes a Tailwind utility.
