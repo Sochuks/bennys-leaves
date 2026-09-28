@@ -2,16 +2,7 @@
    Benny's Leaves — globals.css
    Tailwind CSS v4.3 (CSS-first config, no tailwind.config.js)
    ============================================================ */
-@import url('https://fonts.googleapis.com/css2?family=Young+Serif&display=swap');
-
 @import "tailwindcss";
-
-/* ------------------------------------------------------------
-   FONTS
-   Prefer next/font over this CDN import in production (see
-   Performance Rules) — kept here so this file also works
-   standalone in a plain Vite/HTML setup.
-   ------------------------------------------------------------ */
 
 /* ------------------------------------------------------------
    THEME — every token here becomes a Tailwind utility.
@@ -48,7 +39,7 @@
 
   /* ---- Fonts ---- */
   --font-serif: "Young Serif", Georgia, "Times New Roman", serif;
-  --font-sans:  "Outfit", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: var(--font-sans-loaded), system-ui, sans-serif;
 
   /* ---- Fluid type scale — clamp() computed 375px \u2192 1200px viewport.
      Generates text-display, text-h1 ... text-caption utilities. ---- */
