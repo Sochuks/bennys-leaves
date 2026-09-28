@@ -298,6 +298,60 @@
     background-repeat: no-repeat;
     background-position: right 14px center;
   }
+
+   /* ---- Admin inventory table ---- */
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--color-parchment-bright);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-border);
+  }
+  .admin-table th {
+    text-align: left;
+    font-size: var(--text-caption);
+    font-weight: 600;
+    color: var(--color-text-muted);
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(44, 34, 30, 0.1);
+  }
+  .admin-table td {
+    padding: 14px 16px;
+    font-size: var(--text-body-base);
+    border-bottom: 1px solid rgba(44, 34, 30, 0.06);
+  }
+  .admin-table tr:last-child td { border-bottom: none; }
+  .admin-table tbody tr { transition-property: background-color; transition-duration: 150ms; }
+  .admin-table tbody tr:hover td { background: var(--color-parchment); }
+  .mono-id { font-variant-numeric: tabular-nums; color: var(--color-text-muted); font-size: var(--text-caption); }
+
+  /* ---- Status badge (book_status enum) ---- */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px 4px 8px;
+    border-radius: var(--radius-sm);
+    font-size: var(--text-caption);
+    font-weight: 600;
+  }
+  .status-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .status-available { background: var(--color-olive-tint); color: var(--color-olive); }
+  .status-warning    { background: var(--color-ochre-tint); color: var(--color-ochre-hover); }
+  .status-info       { background: var(--color-slate-tint); color: var(--color-slate); }
+
+  /* ---- Base icon sizing (used by EmptyState and future icon-only spots) ---- */
+  .icon { width: 22px; height: 22px; flex-shrink: 0; }
+
+  /* ---- Empty state ---- */
+  .empty-state { text-align: center; padding: 64px 20px; max-width: 360px; margin: 0 auto; }
+  .empty-state .icon-wrap {
+    width: 56px; height: 56px; border-radius: var(--radius-lg);
+    background: var(--color-olive-tint); color: var(--color-olive);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+  }
 }
 
 /* ------------------------------------------------------------
