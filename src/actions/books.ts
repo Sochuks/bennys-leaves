@@ -11,6 +11,7 @@ const FIELD_NAMES = [
   'category',
   'condition_tag',
   'description',
+  'cover_image_url',
 ] as const
 
 type FieldName = (typeof FIELD_NAMES)[number]
@@ -67,6 +68,7 @@ export async function ingestBook(
       category: parsed.data.category || null,
       condition_tag: parsed.data.condition_tag,
       description: parsed.data.description || null,
+      cover_image_url: parsed.data.cover_image_url || null,
     })
 
     if (error) {

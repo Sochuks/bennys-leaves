@@ -9,6 +9,7 @@ export const bookSchema = z.object({
   category: z.string().max(100).optional().or(z.literal('')),
   condition_tag: z.enum(conditionTags),
   description: z.string().max(2000).optional().or(z.literal('')),
+  cover_image_url: z.string().url().optional().or(z.literal('')),
 })
 
 export type BookFormValues = z.infer<typeof bookSchema>

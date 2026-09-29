@@ -12,6 +12,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <nav className="flex items-center gap-6">
             <Link href="/admin/books" className="ui-text">Inventory</Link>
             <Link href="/admin/books/new" className="ui-text">Add Book</Link>
+            <Link href="/admin/books/scan" className="ui-text">Scan ISBN</Link>
             <SignOutButton />
           </nav>
         </div>
