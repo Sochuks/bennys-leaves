@@ -1,36 +1,19 @@
 'use server'
 
-type OpenLibraryBook = {
-  title?: string
-  authors?: { key: string }[]
-}
+type LookupHit = { title: string; author: string; coverUrl: string }
 
-type OpenLibraryAuthor = {
-  name?: string
-}
+export type IsbnLookupResult = ({ found: true } & LookupHit) | { found: false }
 
-export type IsbnLookupResult =
-  | { found: true; title: string; author: string; coverUrl: string }
-  | { found: false }
-
-export async function lookupIsbn(isbn: string): Promise<IsbnLookupResult> {
-  const cleanIsbn = isbn.replace(/[^0-9Xx]/g, '')
-
+async function lookupOpenLibrary(isbn: string): Promise<LookupHit | null> {
   try {
-    const bookRes = await fetch(`https://openlibrary.org/isbn/${cleanIsbn}.json`, {
+    const bookRes = await fetch(`https://openlibrary.org/isbn/${isbn}.json`, {
       signal: AbortSignal.timeout(5000),
     })
+    if (!bookRes.ok) return null
 
-    if (!bookRes.ok) {
-      return { found: false }
-    }
+    const book: { title?: string; authors?: { key: string }[] } = await bookRes.json()
+    if (!book.title) return null
 
-    const book: OpenLibraryBook = await bookRes.json()
-
-    // Open Library's book record doesn't include the author's name directly —
-    // only a reference like { key: "/authors/OL23919A" }. Getting a readable
-    // name means a second request to that author record. This is a real
-    // shape of the API, not an extra step we're choosing to add.
     let authorName = 'Unknown Author'
     const authorKey = book.authors?.[0]?.key
 
@@ -40,28 +23,60 @@ export async function lookupIsbn(isbn: string): Promise<IsbnLookupResult> {
           signal: AbortSignal.timeout(5000),
         })
         if (authorRes.ok) {
-          const author: OpenLibraryAuthor = await authorRes.json()
+          const author: { name?: string } = await authorRes.json()
           authorName = author.name ?? authorName
         }
       } catch {
-        // If the author lookup times out or fails, don't fail the whole
-        // scan over it — the admin can type the author in by hand.
+        // Leave it as 'Unknown Author' — not worth failing the whole lookup over.
       }
     }
 
     return {
-      found: true,
-      title: book.title ?? '',
+      title: book.title,
       author: authorName,
-      // The Covers API accepts an ISBN directly — no need for a third
-      // request. Caveat: if no cover exists, it returns a tiny 1x1
-      // placeholder image instead of a 404, so this URL is a guess,
-      // not a guarantee. The form below shows it as a preview the
-      // admin can eyeball before saving.
-      coverUrl: `https://covers.openlibrary.org/b/isbn/${cleanIsbn}-M.jpg`,
+      coverUrl: `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg`,
     }
-  } catch (error) {
-    console.error('[lookupIsbn] Open Library request failed:', error)
-    return { found: false }
+  } catch {
+    return null
   }
+}
+
+async function lookupGoogleBooks(isbn: string): Promise<LookupHit | null> {
+  try {
+    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`, {
+      signal: AbortSignal.timeout(5000),
+    })
+    if (!res.ok) return null
+
+    const data: {
+      items?: { volumeInfo?: { title?: string; authors?: string[]; imageLinks?: { thumbnail?: string } } }[]
+    } = await res.json()
+
+    const volume = data.items?.[0]?.volumeInfo
+    if (!volume?.title) return null
+
+    // Google Books returns cover thumbnails as http://, which your production
+    // https:// site will silently block as "mixed content." Force https
+    // before this ever reaches an <img> tag.
+    const rawCover = volume.imageLinks?.thumbnail
+    const coverUrl = rawCover ? rawCover.replace(/^http:\/\//, 'https://') : ''
+
+    return {
+      title: volume.title,
+      author: volume.authors?.[0] ?? 'Unknown Author',
+      coverUrl,
+    }
+  } catch {
+    return null
+  }
+}
+
+export async function lookupIsbn(isbn: string): Promise<IsbnLookupResult> {
+  const cleanIsbn = isbn.replace(/[^0-9Xx]/g, '')
+
+  // Sequential, not parallel, on purpose: Google Books is only worth the
+  // extra network round-trip when Open Library genuinely has nothing.
+  const hit = (await lookupOpenLibrary(cleanIsbn)) ?? (await lookupGoogleBooks(cleanIsbn))
+
+  return hit ? { found: true, ...hit } : { found: false }
 }
