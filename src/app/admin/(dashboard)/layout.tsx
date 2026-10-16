@@ -1,7 +1,10 @@
 import Link from 'next/link'
 import { SignOutButton } from '@/components/admin/SignOutButton'
+import { requireAdmin } from '@/lib/auth'
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  await requireAdmin()
+
   return (
     <div className="min-h-dvh">
       <header className="border-b border-black/10">
@@ -13,6 +16,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Link href="/admin/books" className="ui-text">Inventory</Link>
             <Link href="/admin/books/new" className="ui-text">Add Book</Link>
             <Link href="/admin/books/scan" className="ui-text">Scan ISBN</Link>
+            <Link href="/admin/books/import" className="ui-text">Bulk Import</Link>
             <SignOutButton />
           </nav>
         </div>

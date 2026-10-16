@@ -1,8 +1,11 @@
 import { BookForm } from '@/components/admin/BookForm'
+import { requireAdmin } from '@/lib/auth'
 
-export default function NewBookPage() {
+export default async function NewBookPage() {
+  await requireAdmin()
+
   return (
-    <main className="mx-auto w-full max-w-2xl px-5 py-10 sm:py-14">
+    <div>
       <header className="mb-8">
         <h1 className="h1">Add a book</h1>
         <p className="body mt-2">
@@ -10,6 +13,6 @@ export default function NewBookPage() {
         </p>
       </header>
       <BookForm />
-    </main>
+    </div>
   )
 }

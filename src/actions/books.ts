@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { bookSchema } from '@/lib/validations/book'
+import type { BulkImportRow } from '@/types/book'
+import { checkAdmin } from '@/lib/auth'
 
 const FIELD_NAMES = [
   'title',
@@ -49,17 +51,14 @@ export async function ingestBook(
   try {
     const supabase = await createClient()
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return {
-        status: 'error',
-        message: 'You are signed out. Please sign in again.',
-        fields,
-      }
+  const admin = await checkAdmin()
+  if (!admin.ok) {
+    return {
+      status: 'error',
+      message: 'You are signed out or not an admin. Please sign in again.',
+      fields,
     }
+  }
 
     const { error } = await supabase.from('books').insert({
       title: parsed.data.title,
@@ -98,5 +97,58 @@ export async function ingestBook(
     status: 'success',
     message: `"${parsed.data.title}" was added to the collection.`,
     fields: {},
+  }
+}
+
+export async function bulkImportBooks(
+  rows: BulkImportRow[]
+): Promise<{ insertedCount: number; error: string | null }> {
+  if (rows.length === 0) {
+    return { insertedCount: 0, error: 'No rows to import.' }
+  }
+
+  try {
+    const supabase = await createClient()
+
+    const admin = await checkAdmin()
+    if (!admin.ok) {
+      return { insertedCount: 0, error: 'You are signed out or not an admin. Please sign in again.' }
+    }
+
+    // One insert call carrying an array of rows, not a loop of individual
+    // inserts — this is a single network round-trip, and Postgres treats
+    // a multi-row INSERT as one statement: if any row fails a constraint,
+    // the whole batch rolls back together rather than leaving you with a
+    // partial import to untangle.
+    const { error, count } = await supabase
+      .from('books')
+      .insert(
+        rows.map((r) => ({
+          title: r.title,
+          author: r.author,
+          isbn: r.isbn || null,
+          category: r.category || null,
+          condition_tag: r.condition_tag,
+          description: r.description || null,
+        })),
+        { count: 'exact' }
+      )
+
+    if (error) {
+      console.error('[bulkImportBooks] insert failed:', error)
+      return {
+        insertedCount: 0,
+        error:
+          error.code === '42501'
+            ? 'Your account does not have permission to add books.'
+            : 'Could not save the books. Please try again.',
+      }
+    }
+
+    revalidatePath('/admin/books')
+    return { insertedCount: count ?? rows.length, error: null }
+  } catch (error) {
+    console.error('[bulkImportBooks] unexpected failure:', error)
+    return { insertedCount: 0, error: 'Something went wrong on our side. Please try again.' }
   }
 }

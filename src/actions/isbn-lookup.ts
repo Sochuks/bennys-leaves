@@ -1,42 +1,41 @@
 'use server'
 
+import { checkAdmin } from '@/lib/auth'
+
 type LookupHit = { title: string; author: string; coverUrl: string }
 
 export type IsbnLookupResult = ({ found: true } & LookupHit) | { found: false }
 
+type OpenLibraryBooksResponse = Record<
+  string,
+  {
+    title?: string
+    authors?: { name?: string }[]
+    cover?: { large?: string; medium?: string; small?: string }
+  }
+>
+
 async function lookupOpenLibrary(isbn: string): Promise<LookupHit | null> {
   try {
-    const bookRes = await fetch(`https://openlibrary.org/isbn/${isbn}.json`, {
-      signal: AbortSignal.timeout(5000),
-    })
-    if (!bookRes.ok) return null
+    const res = await fetch(
+      `https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`,
+      { signal: AbortSignal.timeout(8000) }
+    )
+    if (!res.ok) return null
 
-    const book: { title?: string; authors?: { key: string }[] } = await bookRes.json()
-    if (!book.title) return null
-
-    let authorName = 'Unknown Author'
-    const authorKey = book.authors?.[0]?.key
-
-    if (authorKey) {
-      try {
-        const authorRes = await fetch(`https://openlibrary.org${authorKey}.json`, {
-          signal: AbortSignal.timeout(5000),
-        })
-        if (authorRes.ok) {
-          const author: { name?: string } = await authorRes.json()
-          authorName = author.name ?? authorName
-        }
-      } catch {
-        // Leave it as 'Unknown Author' — not worth failing the whole lookup over.
-      }
-    }
+    // An unknown ISBN comes back as an empty object, not a 404.
+    const data: OpenLibraryBooksResponse = await res.json()
+    const book = data[`ISBN:${isbn}`]
+    if (!book?.title) return null
 
     return {
       title: book.title,
-      author: authorName,
-      coverUrl: `https://covers.openlibrary.org/b/isbn/${isbn}-M.jpg`,
+      author: book.authors?.[0]?.name ?? 'Unknown Author',
+      // Empty string when no real cover exists: the form simply shows no preview.
+      coverUrl: book.cover?.medium ?? '',
     }
-  } catch {
+  } catch (error) {
+    console.error('[lookupOpenLibrary] failed:', error)
     return null
   }
 }
@@ -55,9 +54,7 @@ async function lookupGoogleBooks(isbn: string): Promise<LookupHit | null> {
     const volume = data.items?.[0]?.volumeInfo
     if (!volume?.title) return null
 
-    // Google Books returns cover thumbnails as http://, which your production
-    // https:// site will silently block as "mixed content." Force https
-    // before this ever reaches an <img> tag.
+    // Google returns http:// thumbnails; browsers block those on https pages.
     const rawCover = volume.imageLinks?.thumbnail
     const coverUrl = rawCover ? rawCover.replace(/^http:\/\//, 'https://') : ''
 
@@ -66,17 +63,26 @@ async function lookupGoogleBooks(isbn: string): Promise<LookupHit | null> {
       author: volume.authors?.[0] ?? 'Unknown Author',
       coverUrl,
     }
-  } catch {
+  } catch (error) {
+    console.error('[lookupGoogleBooks] failed:', error)
     return null
   }
 }
 
 export async function lookupIsbn(isbn: string): Promise<IsbnLookupResult> {
-  const cleanIsbn = isbn.replace(/[^0-9Xx]/g, '')
+  // Server Actions are public endpoints; without this, anyone could use your
+  // server as a free proxy to these APIs.
+  const admin = await checkAdmin()
+  if (!admin.ok) return { found: false }
 
-  // Sequential, not parallel, on purpose: Google Books is only worth the
-  // extra network round-trip when Open Library genuinely has nothing.
-  const hit = (await lookupOpenLibrary(cleanIsbn)) ?? (await lookupGoogleBooks(cleanIsbn))
+  const cleanIsbn = isbn.replace(/[^0-9Xx]/g, '').toUpperCase()
+  if (cleanIsbn.length !== 10 && cleanIsbn.length !== 13) return { found: false }
+
+  // Start Google immediately, but only wait for it if Open Library has nothing.
+  // Both functions catch their own errors, so the un-awaited promise can never
+  // cause an unhandled rejection.
+  const googleLookup = lookupGoogleBooks(cleanIsbn)
+  const hit = (await lookupOpenLibrary(cleanIsbn)) ?? (await googleLookup)
 
   return hit ? { found: true, ...hit } : { found: false }
 }

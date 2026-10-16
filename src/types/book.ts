@@ -14,3 +14,13 @@ export type Book = {
   description: string | null
   created_at: string
 }
+
+export type BulkImportRow = {
+  title: string
+  author: string
+  isbn: string
+  category: string
+  condition_tag: ConditionTag
+  description: string
+}
+

@@ -1,9 +1,11 @@
 import Link from 'next/link'
 import { getBooks } from '@/lib/queries/books'
+import { requireAdmin } from '@/lib/auth'
 import { InventoryTable } from '@/components/admin/InventoryTable'
 import { EmptyState } from '@/components/ui/EmptyState'
 
 export default async function BooksPage() {
+  await requireAdmin()
   const books = await getBooks()
 
   return (
